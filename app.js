@@ -1,15 +1,14 @@
 import fragmentShaderText from "./webGL/shaders/fragmentShaderText.js"
 import vertexShaderText from "./webGL/shaders/vertexShaderText.js"
+import GameView from "./components/gameView.js"
 
-
-let initDemo = function(){
+function initDemo(){
     
+    let gameView = new GameView();
     //Initiallize the GL content
-    let canvas = document.getElementById("game-window");
-    let gl = canvas.getContext('webgl')
-    
-    
-    let mat4 = glMatrix.mat4
+    const canvas = document.getElementById("game-window");
+    const gl = canvas.getContext('webgl')
+    const mat4 = glMatrix.mat4
 
     if(!gl){
         console.log("Using experimental WebGL")

@@ -1,14 +1,18 @@
-
 import GameView from "./components/gameView.js"
 
-function initDemo(){
+class App{
     
-    let gameView = new GameView();
+    constructor(){
+        this.gameView = new GameView()
+    }
 
+    static start(){
+        return new App();
+    }
+    
 }
 
-console.log('loading script')
 document.addEventListener("DOMContentLoaded", event => {
-    console.log('DOM Loaded')
-    initDemo();
+    console.log('Starting Application...')
+    App.start();
 });

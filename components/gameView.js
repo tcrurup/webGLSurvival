@@ -8,13 +8,36 @@ export default class GameView{
     constructor(){
         this.gameGrid = new Grid();
         this.gameCanvas = this.createCanvas()
-        this.initializeGameView();
+        this.textureBitmaps = null;
+        this.loadTextures();
+    }
+
+    loadTextures(){
+
+        const allTextures = [
+            fetch("assets/SquareLandWater.png").then(response => response.blob()).then(blob => createImageBitmap(blob)),
+            fetch("assets/CircleLandWater.png").then(response => response.blob()).then(blob => createImageBitmap(blob))
+        ];
+
+        Promise.all(allTextures).then(response => {
+            this.textureBitmaps = response
+            this.initializeGameView()
+        })
+
+        /*fetch("assets/SquareLandWater.png")
+            .then(response => response.blob())
+            .then(blob => createImageBitmap(blob))
+            .then(bitmap => {
+                this.testBitmap = bitmap
+                this.initializeGameView();
+        })*/
     }
 
     //Create a display the will generate the graphics
     initializeGameView(){
+
+        console.log(this.testBitmap)
         document.querySelector("body").prepend(this.gameCanvas)
-        
         const gl = this.gameCanvas.getContext('webgl')
         const mat4 = glMatrix.mat4
     
@@ -26,6 +49,7 @@ export default class GameView{
             alert('Your browser does not suppert WebGL')
         }
     
+        //Only needed if using a 3D model
         //gl.enable(gl.DEPTH_TEST);
         //gl.enable(gl.CULL_FACE);
         //gl.frontFace(gl.CCW);
@@ -65,22 +89,22 @@ export default class GameView{
         }
     
         let boxVertices = 
-        [ // X, Y, Z           R, G, B
+        [ // X,   Y,   Z        U, V
             // Front
-            1.0, 1.0, 0.0,    1.0, 0.0, 0.15,
-            1.0, 0.0, 0.0,    1.0, 0.0, 0.15,
-            0.0, 0.0, 0.0,    1.0, 0.0, 0.15,
-            0.0, 1.0, 0.0,    1.0, 0.0, 0.15,
+            1.0, 1.0, 0.0,      1, 1,
+            1.0, 0.0, 0.0,      1, 0, 
+            0.0, 0.0, 0.0,      0, 0,
+            0.0, 1.0, 0.0,      0, 1,
     
-            2.0, 1.0, 0.0,    0.0, 1.0, 0.15,
-            2.0, 0.0, 0.0,    0.0, 1.0, 0.15,
-            1.0, 0.0, 0.0,    0.0, 1.0, 0.15,
-            1.0, 1.0, 0.0,    0.0, 1.0, 0.15,
+            2.0, 1.0, 0.0,      1, 1,
+            2.0, 0.0, 0.0,      1, 0,
+            1.0, 0.0, 0.0,      0, 0,
+            1.0, 1.0, 0.0,      0, 1,
     
-            3.0, 1.0, 0.0,    0.0, 1.0, 0.15,
-            3.0, 0.0, 0.0,    0.0, 1.0, 0.15,
-            2.0, 0.0, 0.0,    0.0, 1.0, 0.15,
-            2.0, 1.0, 0.0,    0.0, 1.0, 0.15,
+            3.0, 1.0, 0.0,      1, 1,
+            3.0, 0.0, 0.0,      1, 0,
+            2.0, 0.0, 0.0,      0, 0,
+            2.0, 1.0, 0.0,      0, 1
         ];
     
         var boxIndices =
@@ -104,28 +128,43 @@ export default class GameView{
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(boxIndices), gl.STATIC_DRAW);
     
         let positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
-        let colorAttribLocation = gl.getAttribLocation(program, 'vertColor');
+        let texCoordAttribLocation = gl.getAttribLocation(program, 'vertTexCoord');
         
         gl.vertexAttribPointer(
             positionAttribLocation,                //Attribute location
             3,                                     //Number of elements per attribute
             gl.FLOAT,                              //Type of elements
             gl.FALSE,                               
-            6 * Float32Array.BYTES_PER_ELEMENT,    //Size of individual vertex 
+            5 * Float32Array.BYTES_PER_ELEMENT,    //Size of individual vertex 
             0                                      //Offset
         );
     
         gl.vertexAttribPointer(
-            colorAttribLocation,
-            3,
+            texCoordAttribLocation,
+            2,
             gl.FLOAT,
             gl.FALSE,
-            6 * Float32Array.BYTES_PER_ELEMENT,
+            5 * Float32Array.BYTES_PER_ELEMENT,
             3 * Float32Array.BYTES_PER_ELEMENT
         )
     
         gl.enableVertexAttribArray(positionAttribLocation);
-        gl.enableVertexAttribArray(colorAttribLocation)
+        gl.enableVertexAttribArray(texCoordAttribLocation)
+
+        let boxTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, boxTexture)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texImage2D(
+            gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            this.textureBitmaps[1] 
+        )
+        
+        gl.bindTexture(gl.TEXTURE_2D, null)
+
     
         gl.useProgram(program);
     
@@ -137,7 +176,7 @@ export default class GameView{
         let viewMatrix = new Float32Array(16)
         let projMatrix = new Float32Array(16)
         mat4.identity(worldMatrix);
-        mat4.lookAt(viewMatrix, [0, 0, 100], [0, 0, 0], [0, 1, 0]);
+        mat4.lookAt(viewMatrix, [0, 0, 20], [0, 0, 0], [0, 1, 0]);
         mat4.perspective(projMatrix, glMatrix.glMatrix.toRadian(45), this.gameCanvas.width / this.gameCanvas.height, 0.1, 1000.0);
     
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
@@ -152,6 +191,9 @@ export default class GameView{
     
         gl.clearColor(0.75, 0.85, 0.8, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+        gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+        gl.activeTexture(gl.TEXTURE0)
         gl.drawElements(gl.TRIANGLES, boxIndices.length, gl.UNSIGNED_SHORT, 0);
         
     }

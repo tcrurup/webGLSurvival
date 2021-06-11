@@ -6,7 +6,7 @@ export default class GameView{
 
     
     constructor(){
-        this.gameGrid = new Grid();
+        this.gameGrid = new Grid(20, 10);
         this.gameCanvas = this.createCanvas()
         this.textureBitmaps = null;
         this.loadTextures();
